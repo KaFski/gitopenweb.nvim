@@ -1,2 +1,4 @@
 # gitopenweb.nvim
-Opens a git repository with current file in the web browser
+
+Simple plugin that allows to open current file in browser.
+Still in progress...
