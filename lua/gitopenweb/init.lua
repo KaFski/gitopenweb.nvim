@@ -57,11 +57,6 @@ M.open = function()
 		local baseURL = build_url(domain, user, repo)
 
 		local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
-		if origin == "" then
-			print("Not a valid branch")
-			return
-		end
-
 		local path = vim.fn.expand('%:p'):sub(string.len(pwd) + 2)
 		local line, _ = unpack(vim.api.nvim_win_get_cursor(0))
 		local system_command = string.format("open %s/%s/%s#L%s", baseURL, branch, path, line)
@@ -93,11 +88,6 @@ M.open_multiline = function()
 		local baseURL = build_url(domain, user, repo)
 
 		local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
-		if origin == "" then
-			print("Not a valid branch")
-			return
-		end
-
 		local path = vim.fn.expand('%:p'):sub(string.len(pwd) + 2)
 		local pos = get_visual_selection()
 		local system_command = string.format("open %s/%s/%s#L%d-L%d", baseURL, branch, path, pos.start_row, pos.end_row)
@@ -105,6 +95,9 @@ M.open_multiline = function()
 		print("Command:", system_command)
 
 		vim.fn.system(system_command)
+	elseif string.find(origin, "https://") then
+		print("HTTPS remote repository")
+		-- TODO: Implement HTTPS remote repository
 	end
 end
 
