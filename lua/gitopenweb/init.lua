@@ -61,8 +61,10 @@ local function get_visual_selection()
 end
 
 --- @class Opts
---- @field origin string?
+--- @field origin string
 --- @field mode string
+--- @field cmd_prefix string
+--- @field cmd_suffix string?
 
 --- TODO: Support linux with xdg-open command
 --- @param opts Opts
@@ -70,6 +72,7 @@ end
 local function build_command(opts)
 	opts = opts or {}
 	opts.mode = opts.mode or "n"
+	opts.cmd_suffix = opts.cmd_suffix or ""
 
 	local pattern
 	if string.find(opts.origin, "git@") then
@@ -83,16 +86,17 @@ local function build_command(opts)
 	local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
 	local path = vim.fn.expand('%:p'):sub(string.len(vim.fn.getcwd()) + 2)
 
+	local url
 	local mode = string.lower(opts.mode)
 	if mode == "n" then
 		local line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
-		return format_url(domain, user, repo, branch, path, line)
+		url = format_url(domain, user, repo, branch, path, line)
 	elseif mode == "v" then
 		local selection = get_visual_selection()
-		return format_url(domain, user, repo, branch, path, selection.start_row, selection.end_row)
+		url = format_url(domain, user, repo, branch, path, selection.start_row, selection.end_row)
 	end
 
-	return ""
+	return string.format("%s %s %s", opts.cmd_prefix, url, opts.cmd_suffix)
 end
 
 M.open = function()
@@ -106,10 +110,11 @@ M.open = function()
 	local opts = {
 		origin = origin,
 		mode = vim.fn.mode(),
+		cmd_prefix = "open",
 	}
 
 	local command = build_command(opts)
-	vim.fn.system("open " .. command)
+	vim.fn.system(command)
 end
 
 M.select = function()
@@ -123,10 +128,12 @@ M.select = function()
 	local opts = {
 		origin = origin,
 		mode = vim.fn.mode(),
+		cmd_prefix = "echo",
+		cmd_suffix = "| pbcopy",
 	}
 
 	local command = build_command(opts)
-	vim.fn.system("echo " .. command .. " | pbcopy")
+	vim.fn.system(command)
 end
 
 vim.keymap.set({ 'n', 'v' }, '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
