@@ -4,10 +4,8 @@ Simple plugin that allows to open current file & current line with cursor on it 
 
 Plugin comes with 2 keymaps
 ```lua
-vim.keymap.set('n', '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
-vim.keymap.set('n', '<leader>gs', M.select, { noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" })
-vim.keymap.set('v', '<leader>go', M.open_multiline, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
-vim.keymap.set('v', '<leader>gs', M.select_multiline, { noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" })
+vim.keymap.set({ 'n', 'v' }, '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
+vim.keymap.set({ 'n', 'v' }, '<leader>gs', M.select, { noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" })
 ```
 
 In normal mode `<leader>go` opens a file with line selected under curson, in visual opens file with selected lines.
