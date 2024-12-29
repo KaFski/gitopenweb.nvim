@@ -86,15 +86,17 @@ local function build_command(opts)
 	local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
 	local path = vim.fn.expand('%:p'):sub(string.len(vim.fn.getcwd()) + 2)
 
-	local url
-	local mode = string.lower(opts.mode)
-	if mode == "n" then
-		local line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
-		url = format_url(domain, user, repo, branch, path, line)
-	elseif mode == "v" then
-		local selection = get_visual_selection()
-		url = format_url(domain, user, repo, branch, path, selection.start_row, selection.end_row)
+	local switch_format = function(mode)
+		if mode == "n" then
+			local line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
+			return format_url(domain, user, repo, branch, path, line)
+		elseif mode == "v" then
+			local selection = get_visual_selection()
+			return format_url(domain, user, repo, branch, path, selection.start_row, selection.end_row)
+		end
 	end
+
+	local url = switch_format(opts.mode)
 
 	return string.format("%s %s %s", opts.cmd_prefix, url, opts.cmd_suffix)
 end
