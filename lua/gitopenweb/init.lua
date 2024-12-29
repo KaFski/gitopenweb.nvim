@@ -1,5 +1,3 @@
-table.unpack = table.unpack or unpack -- 5.1 compatibility
-
 local M = {}
 
 M.setup = function(opts)
@@ -25,14 +23,14 @@ local function build_url(domain, user, repo)
 end
 
 --- @return string url
---- @return string error
+--- @return string? err
 local function git_origin_url()
 	local url = vim.fn.system("git remote get-url origin"):gsub("\n", "")
 	if url == "" or string.find(url, "fatal") then
 		return "", "not a git repository:" .. url
 	end
 
-	return url, ""
+	return url, nil
 end
 
 --- @class Selection
@@ -42,8 +40,9 @@ end
 --- @return Selection
 local function get_visual_selection()
 	-- Get the start and end positions of the visual selection
-	local _, start_row, _, _ = unpack(vim.fn.getpos("v"))
-	local end_row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+	-- more: help getpos & help line
+	local _, start_row, _, _ = table.unpack(vim.fn.getpos("v"))
+	local end_row, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
 
 	--- @type Selection
 	return {
@@ -57,6 +56,7 @@ end
 --- @field origin string
 --- @field pwd string
 
+--- TODO: Support linux with xdg-open command
 --- @param params Params
 local function execute_command(params)
 	local pattern
@@ -76,7 +76,7 @@ local function execute_command(params)
 	--- @type string
 	local command
 	if params.selection == "single_line" then
-		local line, _ = unpack(vim.api.nvim_win_get_cursor(0))
+		local line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
 		command = string.format("open %s/%s/%s#L%s", base_url, branch, path, line)
 	elseif params.selection == "multi_line" then
 		local selection = get_visual_selection()
@@ -87,9 +87,9 @@ local function execute_command(params)
 end
 
 M.open = function()
-	local origin, error = git_origin_url()
-	if error ~= "" then
-		print(error)
+	local origin, err = git_origin_url()
+	if err ~= nil then
+		print(err)
 		return
 	end
 
@@ -107,9 +107,9 @@ end
 
 
 M.open_multiline = function()
-	local origin, error = git_origin_url()
-	if error ~= "" then
-		print(error)
+	local origin, err = git_origin_url()
+	if err ~= nil then
+		print(err)
 		return
 	end
 
@@ -127,6 +127,5 @@ end
 
 vim.keymap.set('n', '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
 vim.keymap.set('v', '<leader>go', M.open_multiline, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
-vim.keymap.set('v', '<leader>gg', get_visual_selection, { noremap = true, silent = true, desc = "[G]it [G] debug" })
 
 return M
