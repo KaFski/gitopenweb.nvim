@@ -24,84 +24,109 @@ local function build_url(domain, user, repo)
 	return string.format("%s/%s/%s", domain, user, repo)
 end
 
---- @return table
+--- @return string url
+--- @return string error
+local function git_origin_url()
+	local url = vim.fn.system("git remote get-url origin"):gsub("\n", "")
+	if url == "" or string.find(url, "fatal") then
+		return "", "not a git repository:" .. url
+	end
+
+	return url, ""
+end
+
+--- @class Selection
+--- @field start_row integer
+--- @field end_row integer
+
+--- @return Selection
 local function get_visual_selection()
 	-- Get the start and end positions of the visual selection
-	local _, start_row, _, _ = unpack(vim.fn.getpos("'<"))
-	local _, end_row, _, _ = unpack(vim.fn.getpos("'>"))
+	local _, start_row, _, _ = unpack(vim.fn.getpos("v"))
+	local end_row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
+	--- @type Selection
 	return {
 		start_row = start_row,
 		end_row = end_row,
 	}
 end
 
+--- @class Params
+--- @field selection string
+--- @field origin string
+--- @field pwd string
+
+--- @param params Params
+local function execute_command(params)
+	local pattern
+	if string.find(params.origin, "git@") then
+		pattern = "git@(.*):(.*)/(.*).git"
+	elseif string.find(params.origin, "http") then
+		pattern = "http[s]?://(.*)/(.*)/(.*).git"
+	end
+
+	local parts = string.gmatch(params.origin, pattern)
+	local domain, user, repo = parts()
+	local base_url = build_url(domain, user, repo)
+
+	local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
+	local path = vim.fn.expand('%:p'):sub(string.len(params.pwd) + 2)
+
+	--- @type string
+	local command
+	if params.selection == "single_line" then
+		local line, _ = unpack(vim.api.nvim_win_get_cursor(0))
+		command = string.format("open %s/%s/%s#L%s", base_url, branch, path, line)
+	elseif params.selection == "multi_line" then
+		local selection = get_visual_selection()
+		command = string.format("open %s/%s/%s#L%d-L%d", base_url, branch, path, selection.start_row, selection.end_row)
+	end
+
+	vim.fn.system(command)
+end
 
 M.open = function()
-	local pwd = vim.fn.getcwd()
-	local origin = vim.fn.system("git remote get-url origin")
-	if origin == "" or string.find(origin, "fatal") then
-		print("Not a git repository")
+	local origin, error = git_origin_url()
+	if error ~= "" then
+		print(error)
 		return
 	end
 
-	print("Result:", origin)
+	--- @type Params
+	local params = {
+		selection = "single_line",
+		origin = origin,
+		pwd = vim.fn.getcwd(),
+	}
 
-	local domain, user, repo, branch
+	vim.print("vim.print(config):", params)
 
-	if string.find(origin, "git@") then
-		print("SSH remote repository")
-		local parts = string.gmatch(origin, "git@(.*):(.*)/(.*).git")
-
-		domain, user, repo = parts()
-		local baseURL = build_url(domain, user, repo)
-
-		local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
-		local path = vim.fn.expand('%:p'):sub(string.len(pwd) + 2)
-		local line, _ = unpack(vim.api.nvim_win_get_cursor(0))
-		local system_command = string.format("open %s/%s/%s#L%s", baseURL, branch, path, line)
-
-		print("Command:", system_command)
-
-		vim.fn.system(system_command)
-	elseif string.find(origin, "https://") then
-		print("HTTPS remote repository")
-		-- TODO: Implement HTTPS remote repository
-	end
+	execute_command(params)
 end
+
 
 M.open_multiline = function()
-	local pwd = vim.fn.getcwd()
-	local origin = vim.fn.system("git remote get-url origin")
-	if origin == "" or string.find(origin, "fatal") then
-		print("Not a git repository")
+	local origin, error = git_origin_url()
+	if error ~= "" then
+		print(error)
 		return
 	end
 
-	local domain, user, repo, branch
+	--- @type Params
+	local params = {
+		selection = "multi_line",
+		origin = origin,
+		pwd = vim.fn.getcwd(),
+	}
 
-	if string.find(origin, "git@") then
-		print("SSH remote repository")
-		local parts = string.gmatch(origin, "git@(.*):(.*)/(.*).git")
+	vim.print("vim.print(config):", params)
 
-		domain, user, repo = parts()
-		local baseURL = build_url(domain, user, repo)
-
-		local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
-		local path = vim.fn.expand('%:p'):sub(string.len(pwd) + 2)
-		local pos = get_visual_selection()
-		local system_command = string.format("open %s/%s/%s#L%d-L%d", baseURL, branch, path, pos.start_row, pos.end_row)
-
-		print("Command:", system_command)
-
-		vim.fn.system(system_command)
-	elseif string.find(origin, "https://") then
-		print("HTTPS remote repository")
-		-- TODO: Implement HTTPS remote repository
-	end
+	execute_command(params)
 end
 
-vim.keymap.set('n', '<leader>go', M.open, { noremap = true, silent = true })
-vim.keymap.set('v', '<leader>go', M.open_multiline, { noremap = true, silent = true })
+vim.keymap.set('n', '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
+vim.keymap.set('v', '<leader>go', M.open_multiline, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
+vim.keymap.set('v', '<leader>gg', get_visual_selection, { noremap = true, silent = true, desc = "[G]it [G] debug" })
 
 return M
