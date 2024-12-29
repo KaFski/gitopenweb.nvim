@@ -57,7 +57,8 @@ end
 
 --- TODO: Support linux with xdg-open command
 --- @param params Params
-local function execute_command(params)
+--- @return string
+local function build_command(params)
 	local pattern
 	if string.find(params.origin, "git@") then
 		pattern = "git@(.*):(.*)/(.*).git"
@@ -72,19 +73,18 @@ local function execute_command(params)
 	local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
 	local path = vim.fn.expand('%:p'):sub(string.len(vim.fn.getcwd()) + 2)
 
-	--- @type string
-	local command
 	if params.selection == "single_line" then
 		local line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
-		command = string.format("open %s/%s/%s#L%s", base_url, branch, path, line)
+		return string.format("%s/%s/%s#L%s", base_url, branch, path, line)
 	elseif params.selection == "multi_line" then
 		local selection = get_visual_selection()
-		command = string.format("open %s/%s/%s#L%d-L%d", base_url, branch, path, selection.start_row, selection.end_row)
+		return string.format("%s/%s/%s#L%d-L%d", base_url, branch, path, selection.start_row, selection.end_row)
 	end
 
-	vim.fn.system(command)
+	return ""
 end
 
+--- TODO: Think if refactor methods by providing args instead of copy & past functions
 M.open = function()
 	local origin, err = git_origin_url()
 	if err ~= nil then
@@ -98,7 +98,25 @@ M.open = function()
 		selection = "single_line",
 	}
 
-	execute_command(params)
+	local command = build_command(params)
+	vim.fn.system("open" .. command)
+end
+
+M.select = function()
+	local origin, err = git_origin_url()
+	if err ~= nil then
+		print(err)
+		return
+	end
+
+	--- @type Params
+	local params = {
+		origin = origin,
+		selection = "single_line",
+	}
+
+	local command = build_command(params)
+	vim.fn.system("echo " .. command .. " | pbcopy")
 end
 
 
@@ -115,10 +133,31 @@ M.open_multiline = function()
 		selection = "multi_line",
 	}
 
-	execute_command(params)
+	local command = build_command(params)
+	vim.fn.system("open" .. command)
+end
+
+M.select_multiline = function()
+	local origin, err = git_origin_url()
+	if err ~= nil then
+		print(err)
+		return
+	end
+
+	--- @type Params
+	local params = {
+		origin = origin,
+		selection = "single_line",
+	}
+
+	local command = build_command(params)
+	vim.fn.system("echo " .. command .. " | pbcopy")
 end
 
 vim.keymap.set('n', '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
+vim.keymap.set('n', '<leader>gs', M.select, { noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" })
 vim.keymap.set('v', '<leader>go', M.open_multiline, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
+vim.keymap.set('v', '<leader>gs', M.select_multiline,
+	{ noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" })
 
 return M
