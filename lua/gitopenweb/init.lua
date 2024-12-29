@@ -52,9 +52,8 @@ local function get_visual_selection()
 end
 
 --- @class Params
---- @field selection string
 --- @field origin string
---- @field pwd string
+--- @field selection string
 
 --- TODO: Support linux with xdg-open command
 --- @param params Params
@@ -71,7 +70,7 @@ local function execute_command(params)
 	local base_url = build_url(domain, user, repo)
 
 	local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
-	local path = vim.fn.expand('%:p'):sub(string.len(params.pwd) + 2)
+	local path = vim.fn.expand('%:p'):sub(string.len(vim.fn.getcwd()) + 2)
 
 	--- @type string
 	local command
@@ -95,12 +94,9 @@ M.open = function()
 
 	--- @type Params
 	local params = {
-		selection = "single_line",
 		origin = origin,
-		pwd = vim.fn.getcwd(),
+		selection = "single_line",
 	}
-
-	vim.print("vim.print(config):", params)
 
 	execute_command(params)
 end
@@ -115,12 +111,9 @@ M.open_multiline = function()
 
 	--- @type Params
 	local params = {
-		selection = "multi_line",
 		origin = origin,
-		pwd = vim.fn.getcwd(),
+		selection = "multi_line",
 	}
-
-	vim.print("vim.print(config):", params)
 
 	execute_command(params)
 end
