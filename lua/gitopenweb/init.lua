@@ -7,8 +7,12 @@ end
 --- @param domain string
 --- @param user string
 --- @param repo string
+--- @param branch string
+--- @param path string
+--- @param start_line integer
+--- @param end_line integer?
 --- @return string
-local function build_url(domain, user, repo)
+local function format_url(domain, user, repo, branch, path, start_line, end_line)
 	if not string.find(domain, "http") then
 		domain = "https://" .. domain
 	end
@@ -19,7 +23,12 @@ local function build_url(domain, user, repo)
 		repo = repo .. "/-/tree"
 	end
 
-	return string.format("%s/%s/%s", domain, user, repo)
+	local lines = string.format("#L%d", start_line)
+	if end_line then
+		lines = string.format("#L%d-L%d", start_line, end_line)
+	end
+
+	return string.format("%s/%s/%s/%s/%s%s", domain, user, repo, branch, path, lines)
 end
 
 --- @return string url
@@ -71,18 +80,16 @@ local function build_command(opts)
 
 	local parts = string.gmatch(opts.origin, pattern)
 	local domain, user, repo = parts()
-	local base_url = build_url(domain, user, repo)
-
 	local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
 	local path = vim.fn.expand('%:p'):sub(string.len(vim.fn.getcwd()) + 2)
 
 	local mode = string.lower(opts.mode)
 	if mode == "n" then
 		local line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
-		return string.format("%s/%s/%s#L%s", base_url, branch, path, line)
+		return format_url(domain, user, repo, branch, path, line)
 	elseif mode == "v" then
 		local selection = get_visual_selection()
-		return string.format("%s/%s/%s#L%d-L%d", base_url, branch, path, selection.start_row, selection.end_row)
+		return format_url(domain, user, repo, branch, path, selection.start_row, selection.end_row)
 	end
 
 	return ""
