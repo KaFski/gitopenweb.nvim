@@ -138,6 +138,9 @@ M.select = function()
 	vim.fn.system(command)
 end
 
+M._format_url = format_url
+M._build_command = build_command
+
 vim.keymap.set({ 'n', 'v' }, '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
 vim.keymap.set({ 'n', 'v' }, '<leader>gs', M.select,
 	{ noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" })
