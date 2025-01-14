@@ -50,8 +50,8 @@ end
 local function get_visual_selection()
 	-- Get the start and end positions of the visual selection
 	-- more: help getpos & help line
-	local _, start_row, _, _ = table.unpack(vim.fn.getpos("v"))
-	local end_row, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
+	local start_row = vim.fn.line("v")
+	local end_row = vim.fn.line(".")
 
 	--- @type Selection
 	return {
@@ -87,6 +87,8 @@ local function build_command(opts)
 	local path = vim.fn.expand('%:p'):sub(string.len(vim.fn.getcwd()) + 2)
 
 	local switch_format = function(mode)
+		mode = string.lower(mode)
+
 		if mode == "n" then
 			local line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
 			return format_url(domain, user, repo, branch, path, line)
