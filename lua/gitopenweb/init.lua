@@ -1,5 +1,7 @@
 local M = {}
 
+table.unpack = unpack or table.unpack
+
 M.setup = function(opts)
 	print("Options:", opts)
 end
@@ -84,7 +86,7 @@ local function build_command(opts)
 	local parts = string.gmatch(opts.origin, pattern)
 	local domain, user, repo = parts()
 	local branch = vim.fn.system("git branch --show-current"):gsub("\n", "")
-	local path = vim.fn.expand('%:p'):sub(string.len(vim.fn.getcwd()) + 2)
+	local path = vim.fn.expand("%:p"):sub(string.len(vim.fn.getcwd()) + 2)
 
 	local switch_format = function(mode)
 		mode = string.lower(mode)
@@ -143,8 +145,12 @@ end
 M._format_url = format_url
 M._build_command = build_command
 
-vim.keymap.set({ 'n', 'v' }, '<leader>go', M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
-vim.keymap.set({ 'n', 'v' }, '<leader>gs', M.select,
-	{ noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" })
+vim.keymap.set({ "n", "v" }, "<leader>go", M.open, { noremap = true, silent = true, desc = "[G]it [O]pen in Web" })
+vim.keymap.set(
+	{ "n", "v" },
+	"<leader>gs",
+	M.select,
+	{ noremap = true, silent = true, desc = "[G]it [S]elect to clipboard" }
+)
 
 return M
